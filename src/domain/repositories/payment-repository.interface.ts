@@ -7,6 +7,16 @@ export type LogProccessPaymentRepositoryData = {
   updatedAt?: Date
 }
 
+export type LogErrorPaymentRepositoryData = {
+  id: string
+  identifier: string
+  totalValue: number
+  error: string
+  createdAt: Date
+  updatedAt?: Date
+}
+
 export interface PaymentRepositoryInterface {
-  logProcessPayment: (input: LogProccessPaymentRepositoryData) => Promise<void>
+  logSuccessProcessPayment: (input: LogProccessPaymentRepositoryData) => Promise<void>
+  logErrorProcessPayment: (input: LogErrorPaymentRepositoryData) => Promise<void>
 }

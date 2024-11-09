@@ -6,6 +6,6 @@ export const ORDER_STATUS = Object.freeze({
   UNPAID: 'unpaid'
 } as const)
 
-export const CREATED_ORDER_QUEUE = 'created_order.fifo'
+export const PREPARE_ORDER_QUEUE = 'prepare_order.fifo'
 export const UPDATED_ORDER_QUEUE = 'updated_order.fifo'
-export const AWS_FIFO_QUEUES = [CREATED_ORDER_QUEUE, UPDATED_ORDER_QUEUE]
+export const AWS_FIFO_QUEUES = [PREPARE_ORDER_QUEUE, UPDATED_ORDER_QUEUE]
