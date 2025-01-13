@@ -8,4 +8,5 @@ export const ORDER_STATUS = Object.freeze({
 
 export const PREPARE_ORDER_QUEUE = 'prepare_order.fifo'
 export const UPDATED_ORDER_QUEUE = 'updated_order.fifo'
+export const CREATED_ORDER_QUEUE = 'created_order.fifo'
 export const AWS_FIFO_QUEUES = [PREPARE_ORDER_QUEUE, UPDATED_ORDER_QUEUE]

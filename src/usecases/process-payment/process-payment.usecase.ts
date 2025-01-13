@@ -1,19 +1,22 @@
 import { PaymentRepositoryInterface } from '@/domain/repositories/payment-repository.interface'
+import { QueueRepositoryInterface } from '@/domain/repositories/queue-repository.interface'
 import { LoggerServiceInterface } from '@/domain/services/logger.service.interface'
 import { PaymentGatewayServiceInterface, ProcessPaymentGatewayOutput } from '@/domain/services/payment-gateway.service.interface'
 import { QueueServiceInterface } from '@/domain/services/queue.service.interface'
 import { UUIDServiceInterface } from '@/domain/services/uuid-service.interface'
 import { ProcessPaymentUseCaseInput, ProcessPaymentUseCaseInterface } from '@/domain/usecases/process-payment.interface'
 import { InvalidParamError, MissingParamError, ProcessPaymentError } from '@/services/error.service'
-import { ORDER_STATUS, PREPARE_ORDER_QUEUE, UPDATED_ORDER_QUEUE } from '../../../constants'
+import { ORDER_STATUS, PREPARE_ORDER_QUEUE, UPDATED_ORDER_QUEUE } from '@/shared/constants'
 
 export class ProcessPaymentUseCase implements ProcessPaymentUseCaseInterface {
+  private messageSentSuccessfully: boolean = true
   constructor (
     private readonly paymentGatewayService: PaymentGatewayServiceInterface,
     private readonly loggerService: LoggerServiceInterface,
     private readonly paymentRepository: PaymentRepositoryInterface,
     private readonly uuidService: UUIDServiceInterface,
-    private readonly queueService: QueueServiceInterface
+    private readonly queueService: QueueServiceInterface,
+    private readonly queueRepository: QueueRepositoryInterface
   ) {}
 
   async execute (input: ProcessPaymentUseCaseInput): Promise<void> {
@@ -24,7 +27,9 @@ export class ProcessPaymentUseCase implements ProcessPaymentUseCaseInterface {
       const response = await this.paymentGatewayService.execute({ totalValue: input.totalValue })
       await this.logSuccessProcessPayment(input.identifier, input.totalValue, response)
       await this.publishMessageOnQueue(input, response)
+      await this.saveQueueMessage(input, response)
     } catch (error: any) {
+      this.loggerService.error(error)
       await this.handleError(input, error)
     }
   }
@@ -59,7 +64,7 @@ export class ProcessPaymentUseCase implements ProcessPaymentUseCaseInterface {
     let queueName: string
 
     if (response.status === ORDER_STATUS.PAID) {
-      message = JSON.stringify({ clientId, items })
+      message = JSON.stringify({ identifier, clientId, items })
       queueName = PREPARE_ORDER_QUEUE
     } else {
       message = JSON.stringify({ identifier, status: ORDER_STATUS.CANCELED })
@@ -68,8 +73,11 @@ export class ProcessPaymentUseCase implements ProcessPaymentUseCaseInterface {
 
     try {
       await this.queueService.sendMessage(queueName, message, identifier, identifier)
+      this.loggerService.info('Publish message on queue', { queueName, message })
     } catch (error) {
       this.loggerService.error('Error publish message on queue', { error })
+      this.messageSentSuccessfully = false
+      throw error
     }
   }
 
@@ -85,6 +93,19 @@ export class ProcessPaymentUseCase implements ProcessPaymentUseCaseInterface {
       })
     } catch (error) {
       this.loggerService.error('Error save log', { error })
+      throw error
     }
+  }
+
+  private async saveQueueMessage (input: ProcessPaymentUseCaseInput, response: ProcessPaymentGatewayOutput): Promise<void> {
+    const { clientId, identifier, items } = input
+    await this.queueRepository.saveQueueMessage({
+      id: this.uuidService.generate(),
+      paymentIdentifier: identifier,
+      message: JSON.stringify({ identifier, clientId, items }),
+      origin: 'processPayment',
+      sentSuccessfully: this.messageSentSuccessfully,
+      createdAt: new Date()
+    })
   }
 }

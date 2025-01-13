@@ -1,19 +1,17 @@
-export type LogProccessPaymentRepositoryData = {
+type LogProccessBase = {
   id: string
   identifier: string
   totalValue: number
-  response: string
   createdAt: Date
   updatedAt?: Date
 }
 
-export type LogErrorPaymentRepositoryData = {
-  id: string
-  identifier: string
-  totalValue: number
+export type LogProccessPaymentRepositoryData = LogProccessBase & {
+  response: string
+}
+
+export type LogErrorPaymentRepositoryData = LogProccessBase & {
   error: string
-  createdAt: Date
-  updatedAt?: Date
 }
 
 export interface PaymentRepositoryInterface {

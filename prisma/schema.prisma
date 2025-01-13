@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model SuccessLog {
+  id         String   @id
+  identifier String
+  totalValue Int
+  response   String   @db.LongText
+  createdAt  DateTime
+  updatedAt  DateTime
+
+  @@map("success_log")
+}
+
+model ErrorLog {
+  id         String   @id
+  identifier String
+  totalValue Int
+  error      String   @db.LongText
+  createdAt  DateTime
+  updatedAt  DateTime
+
+  @@map("error_log")
+}
+
+model SentMessages {
+  id                String   @id
+  paymentIdentifier String
+  message           String   @db.Text
+  origin            String
+  sentSuccessfully  Boolean
+  createdAt         DateTime
+
+  @@map("sendMessages")
+}

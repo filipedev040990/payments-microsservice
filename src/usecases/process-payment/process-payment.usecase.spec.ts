@@ -8,12 +8,14 @@ import { UUIDServiceInterface } from '@/domain/services/uuid-service.interface'
 import { QueueServiceInterface } from '@/domain/services/queue.service.interface'
 import { mock } from 'jest-mock-extended'
 import MockDate from 'mockdate'
+import { QueueRepositoryInterface } from '@/domain/repositories/queue-repository.interface'
 
 const paymentGatewayService = mock<PaymentGatewayServiceInterface>()
 const loggerService = mock<LoggerServiceInterface>()
 const paymentRepository = mock<PaymentRepositoryInterface>()
 const uuidService = mock<UUIDServiceInterface>()
 const queueService = mock<QueueServiceInterface>()
+const queueRepository = mock<QueueRepositoryInterface>()
 
 let sut: ProcessPaymentUseCase
 let input: ProcessPaymentUseCaseInput
@@ -23,7 +25,7 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
-  sut = new ProcessPaymentUseCase(paymentGatewayService, loggerService, paymentRepository, uuidService, queueService)
+  sut = new ProcessPaymentUseCase(paymentGatewayService, loggerService, paymentRepository, uuidService, queueService, queueRepository)
   input = {
     identifier: 'anyIdentifier',
     totalValue: 45000,
@@ -99,10 +101,24 @@ describe('ProcessPaymentUseCase', () => {
   })
 
   test('should publish message on success', async () => {
-    const messageStr = JSON.stringify({ clientId: 'AnyCliend', items: 'anyItems' })
+    const messageStr = JSON.stringify({ identifier: 'anyIdentifier', clientId: 'AnyCliend', items: 'anyItems' })
     paymentGatewayService.execute.mockResolvedValue({ status: 'paid' })
     await sut.execute(input)
     expect(queueService.sendMessage).toHaveBeenCalledTimes(1)
     expect(queueService.sendMessage).toHaveBeenCalledWith('prepare_order.fifo', messageStr, input.identifier, input.identifier)
+  })
+
+  test('should call QueueRepository.saveQueueMessage once and with correct values', async () => {
+    paymentGatewayService.execute.mockResolvedValue({ status: 'paid' })
+    await sut.execute(input)
+    expect(queueRepository.saveQueueMessage).toHaveBeenCalledTimes(1)
+    expect(queueRepository.saveQueueMessage).toHaveBeenCalledWith({
+      id: 'anyUUID',
+      paymentIdentifier: input.identifier,
+      message: JSON.stringify({ identifier: 'anyIdentifier', clientId: 'AnyCliend', items: 'anyItems' }),
+      origin: 'processPayment',
+      sentSuccessfully: true,
+      createdAt: new Date()
+    })
   })
 })

@@ -1,4 +1,5 @@
-import { LoggerServiceInterface, LogLevel } from '@/interfaces/services/logger.service.interface'
+
+import { LoggerServiceInterface, LogLevel } from '@/domain/services/logger.service.interface'
 import pino, { Logger as PinoLogger, LogFn } from 'pino'
 import { randomUUID } from 'crypto'
 

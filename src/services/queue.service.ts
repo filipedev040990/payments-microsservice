@@ -1,4 +1,5 @@
-import { QueueServiceInterface } from '@/interfaces/services/queue.service.interface'
+
+import { QueueServiceInterface } from '@/domain/services/queue.service.interface'
 import { CreateQueueCommand, CreateQueueRequest, DeleteMessageCommand, DeleteMessageRequest, ReceiveMessageCommand, ReceiveMessageRequest, SendMessageCommand, SendMessageRequest, SQSClient } from '@aws-sdk/client-sqs'
 import { LoggerService } from './logger.service'
 
